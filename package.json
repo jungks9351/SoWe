@@ -4,7 +4,8 @@
   "description": "Weather",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "repository": {
     "type": "git",
@@ -17,6 +18,9 @@
   },
   "homepage": "https://github.com/jungks9351/SoWe#readme",
   "dependencies": {
+    "axios": "^0.21.3",
+    "chart.js": "^3.5.1",
+    "cors": "^2.8.5",
     "express": "^4.17.1"
   },
   "devDependencies": {
