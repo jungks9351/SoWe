@@ -14,10 +14,44 @@
     <script src="./js/index.js" defer></script>
   </head>
   <body>
-    <div class="wrapper">
-      <div class="today max"></div>
-      <div class="today min"></div>
-      <!-- <canvas id="myChart" width="400" height="400"></canvas> -->
+    <!-- wrapper start -->
+    <div id="wrapper">
+      <!-- header start -->
+      <header id="header"></header>
+      <!-- header end -->
+      <!-- section start -->
+      <section id="section">
+        <!-- weahterStatus start -->
+        <div id="weatherStatus">
+          <!-- today weather status start -->
+          <div class="current_weather">
+            <h1 id="timezone" class="timezone"></h1>
+            <h2 id="currentDate" class="current_date"></h2>
+            <h3 id="currentWeather"></h3>
+            <h4 id="currentTemp"></h4>
+            <div class="max_min_temp">
+              <p id="maxTemp" class="max_min"></p>
+              <p id="minTemp" class="max_min"></p>
+            </div>
+            <!-- today weather status end -->
+            <!-- daily weather status start -->
+            <div class="daily_weather">
+              <ul id="dailyList" class="daily_list">
+                <!-- <li id="dailyItem" class="daily">
+                  <p>Wed</p>
+                  <img src="https://openweathermap.org/img/wn/10d@2x.png" />
+                  <p>38 / 14</p>
+                </li> -->
+              </ul>
+            </div>
+            <!-- daily weather status end -->
+          </div>
+          <!-- <canvas id="myChart" width="100%" height="50"></canvas> -->
+        </div>
+        <!-- weatherStatus end -->
+      </section>
+      <!-- section end -->
     </div>
+    <!-- wrapper end -->
   </body>
 </html>

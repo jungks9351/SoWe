@@ -1,25 +1,72 @@
 @import url(./reset.css);
 
-.wrapper {
+#wrapper {
+  width: 80%;
+  height: 100%;
+  margin: 2rem auto;
+  padding: 5rem;
+  background-color: #00acff;
+}
+
+/* section */
+
+/* currentWeather */
+
+#weatherStatus {
   width: 100%;
-  font-size: 40px;
-  margin: 0 auto;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  flex-direction: column;
+  color: #fff;
+}
+.current_weather {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+#weatherStatus #timezone {
+  font-size: 3rem;
+}
+#weatherStatus #currentDate {
+  font-size: 2.2rem;
+}
+#weatherStatus #currentWeather {
+  font-size: 2rem;
+}
+#weatherStatus #currentTemp {
+  font-size: 5rem;
+  margin: 2rem 0;
+}
+.max_min_temp {
   display: flex;
   justify-content: center;
   align-items: center;
 }
-
-.today {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  vertical-align: middle;
-  margin-top: 200px;
-  width: 300px;
-  height: 200px;
-  background-color: #ffface;
+.max_min_temp p {
+  font-size: 2rem;
+  font-weight: bold;
+  padding: 0 2rem;
 }
 
-canvas {
-  display: block;
+/* dailyWeather */
+.daily_weather {
+  width: 100%;
+  margin-top: 5rem;
+  display: flex;
+}
+.daily_list {
+  width: 100%;
+  display: flex;
+  justify-content: flex-start;
+}
+.daily {
+  width: 100%;
+  font-size: 2rem;
+  font-weight: bold;
+  text-align: center;
+}
+.daily img {
+  object-fit: cover;
 }
