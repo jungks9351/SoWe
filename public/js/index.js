@@ -1,15 +1,27 @@
 //DOM
+
 // current
+const $weatherStatus = document.querySelector('#weatherStatus');
 const $timezone = document.querySelector('#timezone');
 const $currentDate = document.querySelector('#currentDate');
 const $currentWeather = document.querySelector('#currentWeather');
 const $currentTemp = document.querySelector('#currentTemp');
 const $maxTemp = document.querySelector('#maxTemp');
 const $minTemp = document.querySelector('#minTemp');
+
+//hourly chart
+const $canvas = document.getElementById('hourlyTempChart').getContext('2d');
+
 // daily
 const $dailyList = document.querySelector('#dailyList');
 
+//search
+
+const $searchForm = document.querySelector('#searchForm');
+const $searchCity = document.querySelector('#searchCity');
+
 // 현재 위치 함수 정의
+// 날씨 상태
 
 const getCurrentLocation = async (pos) => {
   const lat = await pos.coords.latitude;
@@ -23,6 +35,7 @@ const getCurrentLocation = async (pos) => {
   const [{ main: weather }] = current.weather;
   const weekly = data.daily;
   const todayTemp = weekly.shift().temp;
+  const [{ icon: currentIcon }] = current.weather;
 
   // 유닉스 시간 변한 함수 정의
   //current yeay, month , day 변환
@@ -36,12 +49,87 @@ const getCurrentLocation = async (pos) => {
   }. ${currentDate.getDate()}. ${currentDay}`;
 
   // current html 작성
+
+  $weatherStatus.insertAdjacentHTML(
+    'afterbegin',
+    `<img src="https://openweathermap.org/img/wn/${currentIcon}@4x.png" />`
+  );
   $timezone.textContent = data.timezone;
   $currentDate.textContent = date;
   $currentWeather.textContent = weather;
   $currentTemp.textContent = `${parseInt(current.temp)}°`;
   $maxTemp.textContent = `Max ${parseInt(todayTemp.max)}°`;
   $minTemp.textContent = `Min ${parseInt(todayTemp.min)}°`;
+
+  //hourly
+
+  const hourlyList = data.hourly.slice(0, 24);
+
+  const labels = [];
+  const temps = [];
+
+  hourlyList.forEach((hourly, index) => {
+    //unix 시간 변환 함수
+    const hourlyDate = new Date(hourly.dt * 1000);
+
+    const hourlyTime = hourlyDate.getHours();
+    const hourlyTemp = hourly.temp;
+
+    if (index % 2) {
+      labels.push(hourlyTime);
+      temps.push(parseInt(hourlyTemp));
+    }
+  });
+
+  let myChart = new Chart($canvas, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'hourly temp',
+          data: temps,
+          backgroundColor: [
+            'rgba(255, 99, 132, 0.2)',
+            'rgba(54, 162, 235, 0.2)',
+            'rgba(255, 206, 86, 0.2)',
+            'rgba(75, 192, 192, 0.2)',
+            'rgba(153, 102, 255, 0.2)',
+            'rgba(255, 159, 64, 0.2)',
+          ],
+          borderColor: [
+            // 'rgba(255, 99, 132, 1)',
+            'rgba(0, 110, 235, 1)',
+            // 'rgba(255, 206, 86, 1)',
+            // 'rgba(75, 192, 192, 1)',
+            // 'rgba(153, 102, 255, 1)',
+            // 'rgba(255, 159, 64, 1)',
+          ],
+          borderWidth: 3,
+          tickColor: '#fff',
+          tension: 0.2,
+        },
+      ],
+    },
+    options: {
+      scales: {
+        y: {
+          suggestedMin: Math.min(...temps),
+          suggestedMax: Math.max(...temps),
+          ticks: {
+            color: '#fff',
+          },
+        },
+        x: {
+          ticks: {
+            color: '#fff',
+          },
+        },
+      },
+      color: '#fff',
+      responsive: false,
+    },
+  });
 
   //daily
 
@@ -58,8 +146,6 @@ const getCurrentLocation = async (pos) => {
 
     // daily Max Min Temp
     let { max: dailyMaxTemp, min: dailyMinTemp } = day.temp;
-    console.log(dailyMaxTemp);
-    console.log(dailyMinTemp);
     //daily html 작성
 
     let dailyItem = `<li id="dailyItem" class="daily"><p>${dailyDay}</p><img src="https://openweathermap.org/img/wn/${dailyIcon}@2x.png" /><p>${parseInt(
@@ -70,63 +156,19 @@ const getCurrentLocation = async (pos) => {
 };
 navigator.geolocation.getCurrentPosition(getCurrentLocation);
 
-// let ctx = document.getElementById('myChart').getContext('2d');
-// let myChart = new Chart(ctx, {
-//   type: 'line',
-//   data: {
-//     labels: ['Mon', 'Tue', 'Wed', 'Thr', 'Fri', 'Sat', 'Sun'],
-//     datasets: [
-//       {
-//         label: '평균온도',
-//         data: [12, 19, 3, 5, 2, 3, 7],
-//         backgroundColor: [
-//           'rgba(255, 99, 132, 0.2)',
-//           'rgba(54, 162, 235, 0.2)',
-//           'rgba(255, 206, 86, 0.2)',
-//           'rgba(75, 192, 192, 0.2)',
-//           'rgba(153, 102, 255, 0.2)',
-//           'rgba(255, 159, 64, 0.2)',
-//         ],
-//         borderColor: [
-//           'rgba(255, 99, 132, 1)',
-//           'rgba(54, 162, 235, 1)',
-//           'rgba(255, 206, 86, 1)',
-//           'rgba(75, 192, 192, 1)',
-//           'rgba(153, 102, 255, 1)',
-//           'rgba(255, 159, 64, 1)',
-//         ],
-//         borderWidth: 3,
-//       },
-//     ],
-//   },
-//   options: {
-//     scales: {
-//       y: {
-//         beginAtZero: true,
-//       },
-//     },
-//   },
-// });
+$searchForm.onsubmit = (e) => {
+  e.preventDefault();
+  const city = $searchCity.value;
 
-// const $li = document.createElement('li');
-// const $p = document.createElement('p');
-// const $img = document.createElement('img');
-// const $div = document.createElement('div');
+  searchCity(city);
+};
+const searchCity = async (city) => {
+  const res = await axios.get(
+    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=32875f331c7600fa76b17fac410e3b0a`
+  );
+  const cityData = res.data.coord;
+  console.log(cityData);
+  localStorage.setItem('cityData', JSON.stringify(cityData));
 
-// $li.id = 'dailyItem';
-// $li.classList.add('daily');
-// $p.textContent = `${dailyDay}`;
-// $li.appendChild($p);
-
-// $img.id = 'dailyIcon';
-// $img.setAttribute(
-//   'src',
-//   `https://openweathermap.org/img/wn/${dailyIcon}@2x.png`
-// );
-// $li.appendChild($img);
-
-// $div.classList.add('daily_temp');
-// $div.textContent = `${dailyMaxTemp} / ${dailyMinTemp}`;
-// $li.appendChild($p);
-
-// $dailyList.appendChild($li);
+  location.href = 'http://localhost:5000/location.html';
+};
