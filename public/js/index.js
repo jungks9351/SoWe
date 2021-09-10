@@ -9,9 +9,6 @@ const $currentTemp = document.querySelector('#currentTemp');
 const $maxTemp = document.querySelector('#maxTemp');
 const $minTemp = document.querySelector('#minTemp');
 
-//hourly chart
-const $canvas = document.getElementById('hourlyTempChart').getContext('2d');
-
 // daily
 const $dailyList = document.querySelector('#dailyList');
 
@@ -20,39 +17,93 @@ const $dailyList = document.querySelector('#dailyList');
 const $searchForm = document.querySelector('#searchForm');
 const $searchCity = document.querySelector('#searchCity');
 
-// 현재 위치 함수 정의
-// 날씨 상태
+// unix week
 
-const getCurrentLocation = async (pos) => {
-  const lat = await pos.coords.latitude;
-  const lon = await pos.coords.longitude;
+const week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thr', 'Fri', 'Sat'];
+
+// 현재 위치 정보 참조 함수
+
+const getCurrentLocation = (pos) => {
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+
+  getWeather(lat, lon);
+};
+
+navigator.geolocation.getCurrentPosition(getCurrentLocation);
+
+$searchForm.onsubmit = (e) => {
+  e.preventDefault();
+  const city = $searchCity.value;
+
+  searchCity(city);
+};
+const searchCity = async (city) => {
+  const res = await axios.get(
+    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=32875f331c7600fa76b17fac410e3b0a`
+  );
+  const { lat, lon } = res.data.coord;
+  toggleLoadingStatus();
+  getWeather(lat, lon);
+};
+
+// refactoring
+
+// 날씨 정보 API GET 요청 함수 정의
+
+const getWeather = async (lat, lon) => {
+  let $canvas = document.getElementById('hourlyTempChart');
+  const $weatherIcon = document.querySelector('#weatherIcon');
+
+  deleteWeatherInfo($canvas, $weatherIcon);
+
   const { data } = await axios.get(
     `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely, alerts&appid=32875f331c7600fa76b17fac410e3b0a`
   );
+  // current
+  createCurrentInfo(data);
+  //hourly
+  createHourlyInfo(data);
+  //daily
+  createDailyInfo(data);
 
+  toggleLoadingStatus();
+};
+
+const deleteWeatherInfo = (canvas, weatherIcon) => {
+  $dailyList.innerHTML = '';
+  $weatherStatus.removeChild(canvas);
+  $weatherStatus.removeChild(weatherIcon);
+  $timezone.textContent = '';
+  $currentDate.textContent = '';
+  $currentWeather.textContent = '';
+  $currentTemp.textContent = '';
+  $maxTemp.textContent = '';
+  $minTemp.textContent = '';
+};
+
+// 날씨 정보 HTMl 작성
+
+// current HTML 작성 함수 정의
+
+const createCurrentInfo = (data) => {
   const current = data.current;
-  const currentTime = current.dt;
   const [{ main: weather }] = current.weather;
   const weekly = data.daily;
   const todayTemp = weekly.shift().temp;
   const [{ icon: currentIcon }] = current.weather;
 
-  // 유닉스 시간 변한 함수 정의
-  //current yeay, month , day 변환
-
-  const week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thr', 'Fri', 'Sat'];
-  const currentDate = new Date(currentTime * 1000);
+  const currentUnixTime = current.dt;
+  const currentDate = convertUnixTime(currentUnixTime);
   let currentDay = week[currentDate.getDay()];
 
   let date = `${currentDate.getFullYear()}. ${
     currentDate.getMonth() + 1
   }. ${currentDate.getDate()}. ${currentDay}`;
 
-  // current html 작성
-
   $weatherStatus.insertAdjacentHTML(
     'afterbegin',
-    `<img src="https://openweathermap.org/img/wn/${currentIcon}@4x.png" />`
+    `<img id="weatherIcon" src="https://openweathermap.org/img/wn/${currentIcon}@4x.png" />`
   );
   $timezone.textContent = data.timezone;
   $currentDate.textContent = date;
@@ -60,18 +111,19 @@ const getCurrentLocation = async (pos) => {
   $currentTemp.textContent = `${parseInt(current.temp)}°`;
   $maxTemp.textContent = `Max ${parseInt(todayTemp.max)}°`;
   $minTemp.textContent = `Min ${parseInt(todayTemp.min)}°`;
+};
 
-  //hourly
+// hourly HTML 작성
 
+const createHourlyInfo = (data) => {
   const hourlyList = data.hourly.slice(0, 24);
 
   const labels = [];
   const temps = [];
 
   hourlyList.forEach((hourly, index) => {
-    //unix 시간 변환 함수
-    const hourlyDate = new Date(hourly.dt * 1000);
-
+    const hourlyUnixTime = hourly.dt;
+    const hourlyDate = convertUnixTime(hourlyUnixTime);
     const hourlyTime = hourlyDate.getHours();
     const hourlyTemp = hourly.temp;
 
@@ -81,6 +133,12 @@ const getCurrentLocation = async (pos) => {
     }
   });
 
+  $weatherStatus.insertAdjacentHTML(
+    'beforeend',
+    '<canvas id="hourlyTempChart" class="hourly_temp_chart"></canvas>'
+  );
+
+  $canvas = document.getElementById('hourlyTempChart').getContext('2d');
   let myChart = new Chart($canvas, {
     type: 'line',
     data: {
@@ -97,14 +155,7 @@ const getCurrentLocation = async (pos) => {
             'rgba(153, 102, 255, 0.2)',
             'rgba(255, 159, 64, 0.2)',
           ],
-          borderColor: [
-            // 'rgba(255, 99, 132, 1)',
-            'rgba(0, 110, 235, 1)',
-            // 'rgba(255, 206, 86, 1)',
-            // 'rgba(75, 192, 192, 1)',
-            // 'rgba(153, 102, 255, 1)',
-            // 'rgba(255, 159, 64, 1)',
-          ],
+          borderColor: ['rgba(0, 110, 235, 1)'],
           borderWidth: 3,
           tickColor: '#fff',
           tension: 0.2,
@@ -130,15 +181,16 @@ const getCurrentLocation = async (pos) => {
       responsive: false,
     },
   });
+};
 
-  //daily
+// daily HTML 작성 함수 정의
 
+const createDailyInfo = (data) => {
   const daily = data.daily;
-  daily.forEach((day) => {
-    // unix 시간 변환 함수 정의
-    // daily day 변환
 
-    const dailyDate = new Date(day.dt * 1000);
+  daily.forEach((day) => {
+    const dailyUnixTime = day.dt;
+    const dailyDate = convertUnixTime(dailyUnixTime);
     let dailyDay = week[dailyDate.getDay()];
 
     // daily icon
@@ -151,24 +203,18 @@ const getCurrentLocation = async (pos) => {
     let dailyItem = `<li id="dailyItem" class="daily"><p>${dailyDay}</p><img src="https://openweathermap.org/img/wn/${dailyIcon}@2x.png" /><p>${parseInt(
       dailyMaxTemp
     )}° / ${parseInt(dailyMinTemp)}°</p></li>`;
+
     $dailyList.innerHTML += dailyItem;
   });
 };
-navigator.geolocation.getCurrentPosition(getCurrentLocation);
+// unix 시간 변환 함수 정의
 
-$searchForm.onsubmit = (e) => {
-  e.preventDefault();
-  const city = $searchCity.value;
-
-  searchCity(city);
+const convertUnixTime = (unixTime) => {
+  const dateTime = new Date(unixTime * 1000);
+  return dateTime;
 };
-const searchCity = async (city) => {
-  const res = await axios.get(
-    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=32875f331c7600fa76b17fac410e3b0a`
-  );
-  const cityData = res.data.coord;
-  console.log(cityData);
-  localStorage.setItem('cityData', JSON.stringify(cityData));
 
-  location.href = 'http://localhost:5000/location.html';
+const toggleLoadingStatus = () => {
+  const $loadingImg = document.querySelector('.loading_img');
+  $loadingImg.classList.toggle('a11y-hidden');
 };
