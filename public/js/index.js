@@ -40,7 +40,7 @@ $searchForm.onsubmit = (e) => {
 };
 const searchCity = async (city) => {
   const res = await axios.get(
-    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=32875f331c7600fa76b17fac410e3b0a`
+    `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${API_KEY}`
   );
   const { lat, lon } = res.data.coord;
   toggleLoadingStatus();
@@ -58,7 +58,7 @@ const getWeather = async (lat, lon) => {
   deleteWeatherInfo($canvas, $weatherIcon);
 
   const { data } = await axios.get(
-    `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely, alerts&appid=32875f331c7600fa76b17fac410e3b0a`
+    `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&units=metric&exclude=minutely, alerts&appid=${API_KEY}`
   );
   // current
   createCurrentInfo(data);
